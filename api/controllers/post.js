@@ -16,7 +16,7 @@ class PostController {
         ...req.body,
         author: user._id,
       });
-
+      
       res.status(201).json({ status: true, post: { ...post.toObject() } });
     } catch (e) {
       res.json({ message: e.message });
