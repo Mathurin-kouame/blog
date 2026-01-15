@@ -1,16 +1,13 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { TagController } from './tag/tag.controller';
 import { TagModule } from './tag/tag.module';
 import { ArticleService } from './article/article.service';
-import { ArticleController } from './article/article.controller';
 import { ArticleModule } from './article/article.module';
 import { UserModule } from './user/user.module';
-import { AuthService } from './auth/auth.service';
-import { AuthController } from './auth/auth.controller';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -30,13 +27,9 @@ import { TypeOrmModule } from '@nestjs/typeorm';
     TagModule,
     ArticleModule,
     UserModule,
+    AuthModule,
   ],
-  controllers: [
-    AppController,
-    TagController,
-    ArticleController,
-    AuthController,
-  ],
-  providers: [AppService, ArticleService, AuthService],
+  controllers: [AppController],
+  providers: [AppService, ArticleService],
 })
 export class AppModule {}
