@@ -21,7 +21,7 @@ export class AuthService {
     });
     if (existingEmail)
       throw new NotFoundException({
-        error: 'cet email est déjà utilisé',
+        error: 'cet email existe déjà',
       });
 
     //hasher le password

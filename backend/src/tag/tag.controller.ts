@@ -1,4 +1,14 @@
-import { Controller } from '@nestjs/common';
+import { Controller, Get } from '@nestjs/common';
+import { TagService } from './tag.service';
 
-@Controller('tag')
-export class TagController {}
+@Controller('tags')
+export class TagController {
+  constructor(private readonly tagService: TagService) {}
+
+  @Get()
+  async getAll() {
+    const allTags = await this.tagService.getAll(); // nous demanons à recevoir tous les sms ici
+    const tags = allTags.map((tag) => tag.name);
+    return { tags };
+  }
+}
