@@ -69,12 +69,12 @@ export class AuthService {
 
     return this.authentificateUser(existingUser);
   }
-
-  async getProfile(firstName: string) {
-    const user = await this.userRepository.findOneBy({ firstName });
+  //création de profil user ...
+  async getProfile(userId: string) {
+    const user = await this.userRepository.findOneBy({ id: userId });
     if (!user) throw new NotFoundException('utilisateur non trouvé');
 
-    return { firstName: user.firstName, userId: user.id };
+    return { id: user.id, firstName: user.firstName, email: user.email };
   }
 
   //fonction pour verifier le mot de passe
