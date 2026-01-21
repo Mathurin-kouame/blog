@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserEntity } from 'src/user/user.entity';
 import { Repository } from 'typeorm';
@@ -14,6 +19,7 @@ export class AuthService {
     private readonly userRepository: Repository<UserEntity>,
     private readonly jwtService: JwtService,
   ) {}
+
   // Inscription
   async createUser(registerUserDto: RegisterUserDto) {
     const { firstName, lastName, email, password } = registerUserDto;
@@ -23,7 +29,7 @@ export class AuthService {
       where: { email },
     });
     if (existingEmail)
-      throw new NotFoundException({
+      throw new ConflictException({
         error: 'cet email existe déjà',
       });
 
@@ -48,7 +54,7 @@ export class AuthService {
     });
 
     if (!existingUser)
-      throw new NotFoundException({
+      throw new UnauthorizedException({
         error: 'Mot de passe ou adresse email incorrect',
       });
 
@@ -57,12 +63,20 @@ export class AuthService {
       existingUser.password,
     );
     if (!isPasswordValid)
-      throw new NotFoundException({
+      throw new UnauthorizedException({
         error: 'Mot de passe ou Adresse email incorrect',
       });
 
     return this.authentificateUser(existingUser);
   }
+
+  async getProfile(firstName: string) {
+    const user = await this.userRepository.findOneBy({ firstName });
+    if (!user) throw new NotFoundException('utilisateur non trouvé');
+
+    return { firstName: user.firstName, userId: user.id };
+  }
+
   //fonction pour verifier le mot de passe
   private async isPasswordValid(
     password: string,
