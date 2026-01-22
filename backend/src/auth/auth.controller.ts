@@ -5,7 +5,6 @@ import { LoginDto } from './dto/login.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { User } from './decorators/user.decorator';
 
-@UseGuards(AuthGuard('jwt'))
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
@@ -22,6 +21,7 @@ export class AuthController {
     return data;
   }
 
+  @UseGuards(AuthGuard('jwt'))
   @Get('profile')
   async getProfile(@User('id') userId: string) {
     return this.authService.getProfile(userId);
