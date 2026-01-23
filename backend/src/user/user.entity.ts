@@ -12,14 +12,14 @@ export class UserEntity {
   @Column()
   lastName: string;
 
-  @Column()
+  @Column({ unique: true })
   email: string;
 
-  @Column({ default: '' })
-  bio: string;
+  @Column({ nullable: true })
+  bio?: string;
 
-  @Column({ default: '' })
-  image: string;
+  @Column({ nullable: true })
+  image?: string;
 
   @Column()
   password: string;
