@@ -10,7 +10,7 @@ import {
 @Entity('tags')
 export class TagEntity {
   @PrimaryGeneratedColumn('uuid')
-  id: number;
+  id: string;
 
   @Column({ unique: true })
   name: string;
