@@ -5,6 +5,7 @@ import { In, Repository } from 'typeorm';
 import { TagEntity } from '../tag/tag.entity';
 import { CreateArticleDto } from './dto/createArticle.dto';
 import { UserEntity } from '../user/user.entity';
+import { ArticleReponseDto } from './dto/articleReponse.dto';
 
 @Injectable()
 export class ArticleService {
@@ -16,10 +17,30 @@ export class ArticleService {
     private readonly tagRepository: Repository<TagEntity>,
   ) {}
 
+  //fonction pour formater notre reponse lors de l'envoie
+  private formatArticle(article: ArticleEntity) {
+    return {
+      id: article.id,
+      title: article.title,
+      slug: article.slug,
+      description: article.description,
+      body: article.body,
+
+      author: {
+        id: article.author.id,
+        email: article.author.email,
+      },
+      tags: article.tags.map((tag) => tag.name),
+      createdAt: article.createdAt,
+      updatedAt: article.updatedAt,
+    };
+  }
+
+  //Methode de creation d'article
   async create(
     createArticleDto: CreateArticleDto,
     author: UserEntity,
-  ): Promise<ArticleEntity> {
+  ): Promise<ArticleReponseDto> {
     const { title, description, body, tags } = createArticleDto;
 
     //Générer le slug
@@ -77,9 +98,14 @@ export class ArticleService {
     });
 
     //sauvegarder
-    return await this.articleRepository.save(article);
+    const savedArticle = await this.articleRepository.save(article);
+    //on ne renvoie plus l’entité brute
+    return this.formatArticle(savedArticle);
   }
-  async getAll(): Promise<ArticleEntity[]> {
-    return await this.articleRepository.find({ relations: ['author', 'tags'] });
+  async getAll() {
+    const articles = await this.articleRepository.find({
+      relations: ['author', 'tags'],
+    });
+    return articles.map((article) => this.formatArticle(article));
   }
 }
