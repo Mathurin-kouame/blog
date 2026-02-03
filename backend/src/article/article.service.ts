@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ArticleEntity } from './article.entity';
 import { In, Repository } from 'typeorm';
@@ -6,9 +6,11 @@ import { TagEntity } from '../tag/tag.entity';
 import { CreateArticleDto } from './dto/createArticle.dto';
 import { UserEntity } from '../user/user.entity';
 import { ArticleReponseDto } from './dto/articleReponse.dto';
+import { FavoriteResponse } from 'src/types/typeArticle';
 
 @Injectable()
 export class ArticleService {
+  [x: string]: any;
   constructor(
     @InjectRepository(ArticleEntity)
     private readonly articleRepository: Repository<ArticleEntity>,
@@ -102,10 +104,77 @@ export class ArticleService {
     //on ne renvoie plus l’entité brute
     return this.formatArticle(savedArticle);
   }
+
   async getAll() {
     const articles = await this.articleRepository.find({
       relations: ['author', 'tags'],
     });
     return articles.map((article) => this.formatArticle(article));
+  }
+
+  // Ajouter favorites
+  async addFavorite(
+    articleId: string,
+    userId: string,
+  ): Promise<FavoriteResponse> {
+    const article = await this.articleRepository.findOne({
+      where: { id: articleId },
+      relations: ['likedBy'],
+    });
+    if (!article) {
+      throw new NotFoundException('article non trouvé !');
+    }
+    //verifier si dedjà en favoris
+    const alreadyLiked = article.likedBy.some((user) => user.id === userId);
+
+    if (alreadyLiked) {
+      //Retirer les favoris
+      article.likedBy = article.likedBy.filter((user) => user.id !== userId);
+      article.favoritesCount -= 1;
+    } else {
+      // Ajouter les favoris
+      const user = { id: userId } as UserEntity;
+      article.likedBy.push(user);
+      article.favoritesCount += 1;
+    }
+
+    await this.articleRepository.save(article);
+    return {
+      favorited: !alreadyLiked,
+      favoritesCount: article.favoritesCount,
+    };
+  }
+
+  //retirer les favoris
+  async removeFavorite(
+    articleId: string,
+    userId: string,
+  ): Promise<FavoriteResponse> {
+    const article = await this.articleRepository.findOne({
+      where: { id: articleId },
+      relations: ['likedBy'],
+    });
+    if (!article) {
+      throw new NotFoundException('article non trouvé !');
+    }
+    //verifier si dedjà en favoris
+    const alreadyLiked = article.likedBy.some((user) => user.id === userId);
+
+    if (alreadyLiked) {
+      //Retirer les favoris
+      article.likedBy = article.likedBy.filter((user) => user.id !== userId);
+      article.favoritesCount -= 1;
+    } else {
+      // Ajouter aux favoris
+      const user = { id: userId } as UserEntity;
+      article.likedBy.push(user);
+      article.favoritesCount += 1;
+    }
+
+    await this.articleRepository.save(article);
+    return {
+      favorited: !alreadyLiked,
+      favoritesCount: article.favoritesCount,
+    };
   }
 }

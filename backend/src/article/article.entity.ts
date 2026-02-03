@@ -35,6 +35,14 @@ export class ArticleEntity {
   })
   author: UserEntity;
 
+  @ManyToMany(() => UserEntity, (user) => user.favorites, {
+    cascade: false,
+  })
+  likedBy: UserEntity[];
+
+  @Column({ default: 0 })
+  favoritesCount: number;
+
   @ManyToMany(() => TagEntity, (tag) => tag.articles)
   @JoinTable()
   tags: TagEntity[];

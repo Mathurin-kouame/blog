@@ -1,9 +1,18 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { ArticleService } from './article.service';
 import { CreateArticleDto } from './dto/createArticle.dto';
 import { User } from 'src/auth/decorators/user.decorator';
 import { UserEntity } from 'src/user/user.entity';
 import { AuthGuard } from '@nestjs/passport';
+import { FavoriteResponse } from 'src/types/typeArticle';
 
 @Controller('article')
 export class ArticleController {
@@ -18,6 +27,27 @@ export class ArticleController {
     const article = await this.articleService.create(createArticleDto, user);
     return { article };
   }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Post(':id/favorite')
+  async addFavorite(@Param('id') articleId: string, @User() user: string) {
+    const addFavorites = await this.articleService.addFavorite(articleId, user);
+    return addFavorites;
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Delete(':id/favorite')
+  async removeFavorite(
+    @Param('id') articleId: string,
+    @User('id') userId: string,
+  ): Promise<FavoriteResponse> {
+    const removeFavorites = await this.articleService.removeFavorite(
+      articleId,
+      userId,
+    );
+    return removeFavorites;
+  }
+
   @Get()
   async getAllArticles() {
     const articles = await this.articleService.getAll(); // nous demanons à recevoir tous les sms ici
