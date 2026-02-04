@@ -14,7 +14,7 @@ import { UserEntity } from 'src/user/user.entity';
 import { AuthGuard } from '@nestjs/passport';
 import { FavoriteResponse } from 'src/types/typeArticle';
 
-@Controller('article')
+@Controller('articles')
 export class ArticleController {
   constructor(private readonly articleService: ArticleService) {}
 
@@ -48,9 +48,15 @@ export class ArticleController {
     return removeFavorites;
   }
 
+  @Get(':slug')
+  async getArticleBySlug(@Param('slug') slug: string) {
+    const article = await this.articleService.findBySlug(slug);
+    return { article };
+  }
+
   @Get()
   async getAllArticles() {
-    const articles = await this.articleService.getAll(); // nous demanons à recevoir tous les sms ici
+    const articles = await this.articleService.getAll(); // nous demanons à recevoir tous les articles ici
     return { articles };
   }
 }

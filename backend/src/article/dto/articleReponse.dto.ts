@@ -10,7 +10,13 @@ export class ArticleReponseDto {
     email: string;
   };
 
-  tags: string[];
+  tags: {
+    id: string;
+    name: string;
+  }[];
+
+  favoritesCount: number;
+  favorited: boolean;
 
   createdAt: Date;
   updatedAt?: Date;

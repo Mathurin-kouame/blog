@@ -32,7 +32,14 @@ export class ArticleService {
         id: article.author.id,
         email: article.author.email,
       },
-      tags: article.tags.map((tag) => tag.name),
+      tags: article.tags.map((tag) => ({
+        id: tag.id,
+        name: tag.name,
+      })),
+
+      favoritesCount: article.favoritesCount,
+      favorited: false,
+
       createdAt: article.createdAt,
       updatedAt: article.updatedAt,
     };
@@ -103,6 +110,18 @@ export class ArticleService {
     const savedArticle = await this.articleRepository.save(article);
     //on ne renvoie plus l’entité brute
     return this.formatArticle(savedArticle);
+  }
+
+  async findBySlug(slug: string): Promise<ArticleEntity> {
+    const article = await this.articleRepository.findOne({
+      where: { slug },
+      relations: ['author', 'tags', 'likedBy'],
+    });
+
+    if (!article) {
+      throw new NotFoundException(`Article avec "${slug}" introuvable`);
+    }
+    return article;
   }
 
   async getAll() {
