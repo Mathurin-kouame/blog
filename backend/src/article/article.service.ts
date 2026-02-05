@@ -20,7 +20,10 @@ export class ArticleService {
   ) {}
 
   //fonction pour formater notre reponse lors de l'envoie
-  private formatArticle(article: ArticleEntity) {
+  private formatArticle(article: ArticleEntity, userId?: string) {
+    const favorited = userId
+      ? article.likedBy?.some((user) => user.id === userId)
+      : false;
     return {
       id: article.id,
       title: article.title,
@@ -38,7 +41,7 @@ export class ArticleService {
       })),
 
       favoritesCount: article.favoritesCount,
-      favorited: false,
+      favorited,
 
       createdAt: article.createdAt,
       updatedAt: article.updatedAt,
@@ -173,26 +176,29 @@ export class ArticleService {
       where: { id: articleId },
       relations: ['likedBy'],
     });
+
     if (!article) {
       throw new NotFoundException('article non trouvé !');
     }
+
     //verifier si dedjà en favoris
     const alreadyLiked = article.likedBy.some((user) => user.id === userId);
 
-    if (alreadyLiked) {
-      //Retirer les favoris
-      article.likedBy = article.likedBy.filter((user) => user.id !== userId);
-      article.favoritesCount -= 1;
-    } else {
-      // Ajouter aux favoris
-      const user = { id: userId } as UserEntity;
-      article.likedBy.push(user);
-      article.favoritesCount += 1;
+    if (!alreadyLiked) {
+      return {
+        favorited: false,
+        favoritesCount: article.favoritesCount,
+      };
     }
 
+    //Retirer les favoris
+    article.likedBy = article.likedBy.filter((user) => user.id !== userId);
+    article.favoritesCount -= 1;
+
     await this.articleRepository.save(article);
+
     return {
-      favorited: !alreadyLiked,
+      favorited: false,
       favoritesCount: article.favoritesCount,
     };
   }
