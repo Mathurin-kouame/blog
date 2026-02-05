@@ -28,7 +28,7 @@ export class UserEntity {
   @Column({ nullable: true })
   image?: string;
 
-  @Column({ select: false })
+  @Column()
   password: string;
 
   @OneToMany(() => ArticleEntity, (article) => article.author)

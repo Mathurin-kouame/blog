@@ -115,7 +115,7 @@ export class ArticleService {
     return this.formatArticle(savedArticle);
   }
 
-  async findBySlug(slug: string): Promise<ArticleEntity> {
+  async findBySlug(slug: string, userId?: string) {
     const article = await this.articleRepository.findOne({
       where: { slug },
       relations: ['author', 'tags', 'likedBy'],
@@ -124,7 +124,7 @@ export class ArticleService {
     if (!article) {
       throw new NotFoundException(`Article avec "${slug}" introuvable`);
     }
-    return article;
+    return this.formatArticle(article, userId);
   }
 
   async getAll() {
@@ -182,7 +182,7 @@ export class ArticleService {
     }
 
     //verifier si dedjà en favoris
-    const alreadyLiked = article.likedBy.some((user) => user.id === userId);
+    const alreadyLiked = article.likedBy.some((u) => u.id === userId);
 
     if (!alreadyLiked) {
       return {
@@ -192,7 +192,7 @@ export class ArticleService {
     }
 
     //Retirer les favoris
-    article.likedBy = article.likedBy.filter((user) => user.id !== userId);
+    article.likedBy = article.likedBy.filter((u) => u.id !== userId);
     article.favoritesCount -= 1;
 
     await this.articleRepository.save(article);

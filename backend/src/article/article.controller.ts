@@ -48,9 +48,13 @@ export class ArticleController {
     return removeFavorites;
   }
 
+  @UseGuards(AuthGuard('jwt'))
   @Get(':slug')
-  async getArticleBySlug(@Param('slug') slug: string) {
-    const article = await this.articleService.findBySlug(slug);
+  async getArticleBySlug(
+    @Param('slug') slug: string,
+    @User('id') userId: string,
+  ) {
+    const article = await this.articleService.findBySlug(slug, userId);
     return { article };
   }
 
