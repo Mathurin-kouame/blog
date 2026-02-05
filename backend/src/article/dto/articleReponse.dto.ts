@@ -7,7 +7,7 @@ export class ArticleReponseDto {
 
   author: {
     id: string;
-    email: string;
+    username: string;
   };
 
   tags: {

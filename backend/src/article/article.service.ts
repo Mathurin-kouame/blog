@@ -33,7 +33,7 @@ export class ArticleService {
 
       author: {
         id: article.author.id,
-        email: article.author.email,
+        username: article.author.firstName,
       },
       tags: article.tags.map((tag) => ({
         id: tag.id,
