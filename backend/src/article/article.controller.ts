@@ -5,6 +5,7 @@ import {
   Get,
   Param,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { ArticleService } from './article.service';
@@ -56,6 +57,22 @@ export class ArticleController {
   ) {
     const article = await this.articleService.findBySlug(slug, userId);
     return { article };
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Delete(':id')
+  async deleteArticle(
+    @Param('id') articleId: string,
+    @User('id') userI: string,
+    @Query('confirm') confirm?: string,
+  ) {
+    const isConfirmed = confirm === 'true';
+    const deleteArticle = await this.articleService.deleteArticle(
+      articleId,
+      userI,
+      isConfirmed,
+    );
+    return deleteArticle;
   }
 
   @Get()

@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ArticleEntity } from './article.entity';
 import { In, Repository } from 'typeorm';
@@ -20,10 +24,7 @@ export class ArticleService {
   ) {}
 
   //fonction pour formater notre reponse lors de l'envoie
-  private formatArticle(article: ArticleEntity, userId?: string) {
-    const favorited = userId
-      ? article.likedBy?.some((user) => user.id === userId)
-      : false;
+  private formatArticle(article: ArticleEntity) {
     return {
       id: article.id,
       title: article.title,
@@ -41,7 +42,7 @@ export class ArticleService {
       })),
 
       favoritesCount: article.favoritesCount,
-      favorited,
+      favorited: false,
 
       createdAt: article.createdAt,
       updatedAt: article.updatedAt,
@@ -124,7 +125,14 @@ export class ArticleService {
     if (!article) {
       throw new NotFoundException(`Article avec "${slug}" introuvable`);
     }
-    return this.formatArticle(article, userId);
+    //on formate d'abord
+    const formatted = this.formatArticle(article);
+
+    //puis on calcule "formatted" si user est connecté
+    if (userId) {
+      formatted.favorited = article.likedBy.some((user) => user.id === userId);
+    }
+    return formatted;
   }
 
   async getAll() {
@@ -200,6 +208,41 @@ export class ArticleService {
     return {
       favorited: false,
       favoritesCount: article.favoritesCount,
+    };
+  }
+
+  // supprimer un article
+  async deleteArticle(
+    articleId: string,
+    userId: string,
+    confirm: boolean,
+  ): Promise<{ deleted: boolean; message: string }> {
+    const article = await this.articleRepository.findOne({
+      where: { id: articleId },
+      relations: ['author'],
+    });
+
+    if (!article) {
+      throw new NotFoundException("cet article n'existe pas");
+    }
+
+    //verifie si c'est bien l'auteur
+    if (article.author.id !== userId) {
+      throw new ForbiddenException(' vous ne pouvez supprimer cet Article! ');
+    }
+    //demande de confimation
+    if (!confirm) {
+      return {
+        deleted: false,
+        message: 'voulez vraiment supprimer cet article!',
+      };
+    }
+    // si confirmé on supprimer
+    await this.articleRepository.delete(articleId);
+
+    return {
+      deleted: true,
+      message: 'article supprimé avec succès',
     };
   }
 }
