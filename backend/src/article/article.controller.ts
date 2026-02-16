@@ -4,7 +4,9 @@ import {
   Delete,
   Get,
   Param,
+  ParseUUIDPipe,
   Post,
+  Put,
   Query,
   UseGuards,
 } from '@nestjs/common';
@@ -14,6 +16,7 @@ import { User } from 'src/auth/decorators/user.decorator';
 import { UserEntity } from 'src/user/user.entity';
 import { AuthGuard } from '@nestjs/passport';
 import { FavoriteResponse } from 'src/types/typeArticle';
+import { UpdateArticleDto } from './dto/updateArticle.dto';
 
 @Controller('articles')
 export class ArticleController {
@@ -60,16 +63,32 @@ export class ArticleController {
   }
 
   @UseGuards(AuthGuard('jwt'))
+  @Put(':id')
+  async updateArticle(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @User('id') userId: string,
+    @Body() updateArticleDto: UpdateArticleDto,
+  ) {
+    const updateArticle = await this.articleService.updateArticleId(
+      id,
+      updateArticleDto,
+      userId,
+    );
+
+    return updateArticle;
+  }
+
+  @UseGuards(AuthGuard('jwt'))
   @Delete(':id')
   async deleteArticle(
     @Param('id') articleId: string,
-    @User('id') userI: string,
+    @User('id') userId: string,
     @Query('confirm') confirm?: string,
   ) {
     const isConfirmed = confirm === 'true';
     const deleteArticle = await this.articleService.deleteArticle(
       articleId,
-      userI,
+      userId,
       isConfirmed,
     );
     return deleteArticle;

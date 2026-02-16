@@ -11,6 +11,7 @@ import { CreateArticleDto } from './dto/createArticle.dto';
 import { UserEntity } from '../user/user.entity';
 import { ArticleReponseDto } from './dto/articleReponse.dto';
 import { FavoriteResponse } from 'src/types/typeArticle';
+import { UpdateArticleDto } from './dto/updateArticle.dto';
 
 @Injectable()
 export class ArticleService {
@@ -23,8 +24,34 @@ export class ArticleService {
     private readonly tagRepository: Repository<TagEntity>,
   ) {}
 
+  private async generateSlug(title: string): Promise<string> {
+    const baseSlug = title
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)+/g, '');
+
+    let slug = baseSlug;
+    let count = 1;
+
+    while (
+      await this.articleRepository.findOne({
+        where: { slug },
+      })
+    ) {
+      slug = `${baseSlug}-${count}`;
+      count++;
+    }
+
+    return slug;
+  }
+
   //fonction pour formater notre reponse lors de l'envoie
-  private formatArticle(article: ArticleEntity) {
+  private formatArticle(article: ArticleEntity, currentUserId?: string) {
+    const favorited = currentUserId
+      ? article.likedBy?.some((user) => user.id === currentUserId)
+      : false;
+
     return {
       id: article.id,
       title: article.title,
@@ -36,13 +63,14 @@ export class ArticleService {
         id: article.author.id,
         username: article.author.firstName,
       },
-      tags: article.tags.map((tag) => ({
-        id: tag.id,
-        name: tag.name,
-      })),
+      tags:
+        article.tags.map((tag) => ({
+          id: tag.id,
+          name: tag.name,
+        })) || [],
 
-      favoritesCount: article.favoritesCount,
-      favorited: false,
+      favoritesCount: article.likedBy?.length || 0,
+      favorited,
 
       createdAt: article.createdAt,
       updatedAt: article.updatedAt,
@@ -211,15 +239,56 @@ export class ArticleService {
     };
   }
 
-  // supprimer un article
-  async deleteArticle(
-    articleId: string,
+  //mise à jour de l'article
+  async updateArticleId(
+    id: string,
+    updateArticleDto: UpdateArticleDto,
     userId: string,
-    confirm: boolean,
-  ): Promise<{ deleted: boolean; message: string }> {
+  ) {
+    //const article = await this.findBySlug(slug);
+    const article = await this.articleRepository.findOne({
+      where: { id },
+      relations: ['author', 'tags', 'likedBy'],
+    });
+
+    if (!article) {
+      throw new NotFoundException('Article non trouvé!');
+    }
+
+    if (article.author.id !== userId) {
+      throw new ForbiddenException("vous n'etes pas l'auteur de cet article");
+    }
+
+    if (updateArticleDto.title !== undefined) {
+      article.title = updateArticleDto.title;
+      article.slug = await this.generateSlug(updateArticleDto.title);
+    }
+
+    if (updateArticleDto.description !== undefined) {
+      article.description = updateArticleDto.description;
+    }
+    if (updateArticleDto.body !== undefined) {
+      article.body = updateArticleDto.body;
+    }
+
+    if (updateArticleDto.tags !== undefined) {
+      const tags = await this.tagRepository.find({
+        where: { name: In(updateArticleDto.tags) },
+      });
+
+      article.tags = tags;
+    }
+
+    const updatedArticle = await this.articleRepository.save(article);
+
+    return this.formatArticle(updatedArticle, userId);
+  }
+
+  // supprimer un article
+  async deleteArticle(articleId: string, userId: string, confirm: boolean) {
     const article = await this.articleRepository.findOne({
       where: { id: articleId },
-      relations: ['author'],
+      relations: ['author', 'likedBy'],
     });
 
     if (!article) {
@@ -228,20 +297,22 @@ export class ArticleService {
 
     //verifie si c'est bien l'auteur
     if (article.author.id !== userId) {
-      throw new ForbiddenException(' vous ne pouvez supprimer cet Article! ');
+      throw new ForbiddenException(
+        ' vous ne pouvez pas supprimer cet Article! ',
+      );
     }
     //demande de confimation
     if (!confirm) {
       return {
-        deleted: false,
-        message: 'voulez vraiment supprimer cet article!',
+        message: 'Confirmez la suppression avec ?confirm=true',
       };
     }
+    article.likedBy = [];
+    await this.articleRepository.save(article);
     // si confirmé on supprimer
-    await this.articleRepository.delete(articleId);
+    await this.articleRepository.remove(article);
 
     return {
-      deleted: true,
       message: 'article supprimé avec succès',
     };
   }
