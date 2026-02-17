@@ -272,11 +272,29 @@ export class ArticleService {
     }
 
     if (updateArticleDto.tags !== undefined) {
-      const tags = await this.tagRepository.find({
-        where: { name: In(updateArticleDto.tags) },
+      const tagName = updateArticleDto.tags;
+
+      //recupere les tags existants
+      const existingTags = await this.tagRepository.find({
+        where: { name: In(tagName) },
       });
 
-      article.tags = tags;
+      const existingTagNames = existingTags.map((tag) => tag.name);
+
+      // identifier les nouveaux tags
+      const newTagNames = tagName.filter(
+        (name) => !existingTagNames.includes(name),
+      );
+
+      //créer de nouveaux Tags
+      const newTags = this.tagRepository.create(
+        newTagNames.map((name) => ({ name })),
+      );
+
+      const savedNewTags = await this.tagRepository.save(newTags);
+
+      //Fusionner
+      article.tags = [...existingTags, ...savedNewTags];
     }
 
     const updatedArticle = await this.articleRepository.save(article);
